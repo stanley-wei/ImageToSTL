@@ -16,4 +16,5 @@ Requires Python3
         
     python3 ImageToSTL/image_to_stl.py <IMAGE_FILENAME>
         
-See ```python3 ImageToSTL/image_to_stl.py --help``` for additional options.
+
+Use ```python3 ImageToSTL/image_to_stl.py --help``` for additional options.
