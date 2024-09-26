@@ -11,36 +11,16 @@ import sys
         - Switch from numpy_stl to pyvista
         - Reduce triangulation of flat surfaces
 '''
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generates a 3D model based on an image heightmap.")
-    parser.add_argument('image',
-                        help='File name of input image')
-    parser.add_argument('output', nargs='?', const="output.stl", default="output.stl",
-                        help='File name of output 3D model (Default: "output.stl")')
+def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
+    image = cv2.imread(file_name, -1)
 
-    parser.add_argument('-b', '--base', type=float, nargs='?', const=0, default=0,
-                    help='Height of model base (Default = 0)')
-    parser.add_argument('--x-scale', type=float, nargs='?', const=1.0, default=1.0,
-                    dest='x_scale', help='X scale of generated model')
-    parser.add_argument('--y-scale', type=float, nargs='?', const=1.0, default=1.0,
-                    dest='y_scale', help='Y scale of generated model')
-    parser.add_argument('--z-scale', type=float, nargs='?', const=1.0, default=1.0,
-                    dest='z_scale', help='Z scale of generated model')
-
-    parser.add_argument('--keep-zeroes', dest='keep_zeroes', action='store_true',
-                        help='Retain zero-valued pixels within the generated mesh')
-    
-    args = parser.parse_args();
-    image = cv2.imread(args.image, -1)
-
-    base_height = args.base
+    base_height = base
 
     contours_mask = np.ones(image.shape[0:2], dtype=image.dtype)
     if len(image.shape) == 3 and image.shape[2] == 4:
         contours_mask[np.where(image[:, :, 3] == 0)] = 0
 
-    image = cv2.imread(args.image, cv2.IMREAD_GRAYSCALE)
-    keep_zeroes = args.keep_zeroes
+    image = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
     if not keep_zeroes:
         contours_mask[np.where(image == 0)] = 0
         base_height -= 1
@@ -182,7 +162,33 @@ if __name__ == "__main__":
             index += 2
 
     meshed.data = np.concatenate((meshed.data, sides.data))
-    meshed.vectors[:, :, 0] *= args.x_scale
-    meshed.vectors[:, :, 1] *= args.y_scale
-    meshed.vectors[:, :, 2] *= args.z_scale
+    meshed.vectors[:, :, 0] *= x_scale
+    meshed.vectors[:, :, 1] *= y_scale
+    meshed.vectors[:, :, 2] *= z_scale
+
+    return meshed
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generates a 3D model based on an image heightmap.")
+    parser.add_argument('image',
+                        help='File name of input image')
+    parser.add_argument('output', nargs='?', const="output.stl", default="output.stl",
+                        help='File name of output 3D model (Default: "output.stl")')
+
+    parser.add_argument('-b', '--base', type=float, nargs='?', const=0, default=0,
+                    help='Height of model base (Default = 0)')
+    parser.add_argument('--x-scale', type=float, nargs='?', const=1.0, default=1.0,
+                    dest='x_scale', help='X scale of generated model')
+    parser.add_argument('--y-scale', type=float, nargs='?', const=1.0, default=1.0,
+                    dest='y_scale', help='Y scale of generated model')
+    parser.add_argument('--z-scale', type=float, nargs='?', const=1.0, default=1.0,
+                    dest='z_scale', help='Z scale of generated model')
+
+    parser.add_argument('--keep-zeroes', dest='keep_zeroes', action='store_true',
+                        help='Retain zero-valued pixels within the generated mesh')
+    
+    args = parser.parse_args();
+    meshed = image_to_stl(args.image, args.base, args.x_scale, args.y_scale, args.z_scale, args.keep_zeroes)
+
     meshed.save(args.output)
