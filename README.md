@@ -1,4 +1,4 @@
-## ImageToSTL
+# ImageToSTL
 Generates enclosed 3D models from image heightmaps.
 
 ## Installation

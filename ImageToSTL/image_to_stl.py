@@ -17,8 +17,16 @@ if __name__ == "__main__":
                         help='File name of input image')
     parser.add_argument('output', nargs='?', const="output.stl", default="output.stl",
                         help='File name of output 3D model (Default: "output.stl")')
+
     parser.add_argument('-b', '--base', type=float, nargs='?', const=0, default=0,
                     help='Height of model base (Default = 0)')
+    parser.add_argument('--x-scale', type=float, nargs='?', const=1.0, default=1.0,
+                    dest='x_scale', help='X scale of generated model')
+    parser.add_argument('--y-scale', type=float, nargs='?', const=1.0, default=1.0,
+                    dest='y_scale', help='Y scale of generated model')
+    parser.add_argument('--z-scale', type=float, nargs='?', const=1.0, default=1.0,
+                    dest='z_scale', help='Z scale of generated model')
+
     parser.add_argument('--ignore-zeroes', dest='ignore_zeroes', action='store_false',
                         help='Treat zero-valued pixels as non-solid (Default: True)')
     
@@ -172,4 +180,7 @@ if __name__ == "__main__":
             index += 2
 
     meshed.data = np.concatenate((meshed.data, sides.data))
+    meshed.vectors[:, :, 0] *= args.x_scale
+    meshed.vectors[:, :, 1] *= args.y_scale
+    meshed.vectors[:, :, 2] *= args.z_scale
     meshed.save(args.output)
