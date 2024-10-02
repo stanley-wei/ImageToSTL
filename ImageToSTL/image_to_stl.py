@@ -27,7 +27,7 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
     if not keep_zeroes:
         contours_mask[np.where(image == 0)] = 0 # Ignore zero-valued pixels
         base_height -= 1
-    contours = list(cv2.findContours(contours_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0])
+    contours = list(cv2.findContours(contours_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)[0])
 
     # Top & Bottom
     top_bottom_faces = 4 * image.shape[0] * image.shape[1]  # Number of top/bottom faces
