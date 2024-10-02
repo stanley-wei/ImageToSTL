@@ -13,6 +13,11 @@ Requires Python3
         pip install -r ImageToSTL/requirements.txt
 
 ## Usage
+To run from GUI:
+
+    python3 ImageToSTL/gui.py
+
+Alternatively, you can run from the command line directly:
         
     python3 ImageToSTL/image_to_stl.py <IMAGE_FILENAME>
         
