@@ -11,7 +11,7 @@ import sys
         - Switch from numpy_stl to pyvista
         - Reduce triangulation of flat surfaces
 '''
-def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
+def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_transparent):
     image = cv2.imread(file_name, -1)
 
     base_height = base
@@ -19,8 +19,11 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
     # Bitmap denoting which pixels are ignored (i.e. non-solid) vs. not-ignored
     contours_mask = np.ones(image.shape[0:2], dtype=image.dtype)
     if len(image.shape) == 3 and image.shape[2] == 4:
-        # Ignore transparent pixels
-        contours_mask[np.where(image[:, :, 3] == 0)] = 0
+        # Ignore fully transparent pixels
+        if keep_transparent:
+            contours_mask[np.where(image[:, :, 3] == 0)] = 0
+        else:
+            contours_mask[np.where(image[:, :, 3] != 255)] = 0
 
     # Find contours to generate side walls for mesh
     image = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
@@ -194,8 +197,11 @@ if __name__ == "__main__":
 
     parser.add_argument('--keep-zeroes', dest='keep_zeroes', action='store_true',
                         help='Retain zero-valued pixels within the generated mesh')
+    parser.add_argument('--keep-transparent', dest='keep_transparent', action='store_true',
+                        help='Retain partially transparent pixels within the generated mesh')
     
     args = parser.parse_args();
-    meshed = image_to_stl(args.image, args.base, args.x_scale, args.y_scale, args.z_scale, args.keep_zeroes)
+    meshed = image_to_stl(args.image, args.base, args.x_scale, args.y_scale, args.z_scale, 
+        args.keep_zeroes, args.keep_transparent)
 
     meshed.save(args.output)

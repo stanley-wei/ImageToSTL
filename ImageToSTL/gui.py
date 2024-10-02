@@ -59,6 +59,7 @@ def process_gui_values(window, values):
 		return	
 
 	keep_zeroes = not values['ignore_zeroes']
+	keep_transparent = not values['ignore_transparent']
 
 	output_filename = values['output_filename']
 	if not output_filename:
@@ -68,7 +69,7 @@ def process_gui_values(window, values):
 	display_status_message(window,
 		f"Generating mesh...", color='white')
 
-	meshed = image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes)
+	meshed = image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_transparent)
 	meshed.save(output_filename)
 
 	display_status_message(window, 
@@ -83,7 +84,8 @@ def main():
 				[sg.Text("X scale:"), sg.Input(1.0, key='scale_x', size=(10,1))],
 				[sg.Text("Y scale:"), sg.Input(1.0, key='scale_y', size=(10,1))],
 				[sg.Text("Z scale:"), sg.Input(1.0, key='scale_z', size=(10,1))],
-				[sg.Checkbox('Ignore zero-valued pixels', default=True, key='ignore_zeroes')]]
+				[sg.Checkbox('Ignore zero-valued pixels', default=True, key='ignore_zeroes')],
+				[sg.Checkbox('Ignore partially transparent pixels', default=True, key='ignore_transparent')]]
 
 
 	# All the stuff inside your window.
