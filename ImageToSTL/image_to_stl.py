@@ -16,13 +16,16 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
 
     base_height = base
 
+    # Bitmap denoting which pixels are ignored (i.e. non-solid) vs. not-ignored
     contours_mask = np.ones(image.shape[0:2], dtype=image.dtype)
     if len(image.shape) == 3 and image.shape[2] == 4:
+        # Ignore transparent pixels
         contours_mask[np.where(image[:, :, 3] == 0)] = 0
 
+    # Find contours to generate side walls for mesh
     image = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
     if not keep_zeroes:
-        contours_mask[np.where(image == 0)] = 0
+        contours_mask[np.where(image == 0)] = 0 # Ignore zero-valued pixels
         base_height -= 1
     contours = list(cv2.findContours(contours_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0])
 
@@ -37,6 +40,7 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
     if not has_holes:
         for i in range(image.shape[0] - 1):
             for j in range(image.shape[1] - 1):
+                # 4 triangles (2 top, 2 bottom) for every 4-pixel square
                 meshed.vectors[index] = np.array([
                     [i, j+1, image[i, j+1]],
                     [i, j, image[i, j]],
@@ -61,6 +65,7 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
     else:
         for i in range(image.shape[0] - 1):
             for j in range(image.shape[1] - 1):
+                # Only generate triangles with non-ignored corners
                 corners = [
                     contours_mask[i, j],
                     contours_mask[i+1, j],
@@ -140,14 +145,15 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
     meshed.data = meshed.data[0:index]
 
     # Sides
-    contour_faces = 0                                       # Number of side faces
+    contour_faces = 0   # Number of side faces
     for i in range(len(contours)):
-        contours[i] = np.append(np.squeeze(contours[i]), contours[i][0], axis=0)
+        contours[i] = np.append(np.squeeze(contours[i], axis=1), contours[i][0], axis=0)
         contour_faces += 2 * contours[i].shape[0]
     sides = mesh.Mesh(np.zeros(contour_faces, dtype=mesh.Mesh.dtype))
 
     index = 0
     for contour in contours:
+        # Create two triangles for every pair of adjacent points in a contour
         for i in range(len(contour)-1):
             sides.vectors[index] = np.array([
                 [contour[i][1], contour[i][0], -base_height],
@@ -161,6 +167,7 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes):
             ])
             index += 2
 
+    # Combine top/bottom & side triangle sets
     meshed.data = np.concatenate((meshed.data, sides.data))
     meshed.vectors[:, :, 0] *= x_scale
     meshed.vectors[:, :, 1] *= y_scale
