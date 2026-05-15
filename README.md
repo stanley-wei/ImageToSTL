@@ -1,6 +1,8 @@
 # ImageToSTL
 Generates enclosed 3D models from image heightmaps.
 
+<img width="522" height="391" alt="image" src="https://github.com/user-attachments/assets/1b73c6ae-2ef0-4a30-8592-c07b07a2780a" />
+
 ## Installation
 Requires Python3
 
