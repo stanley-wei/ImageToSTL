@@ -10,7 +10,7 @@ Requires Python3
 
 2. Install required packages:
 
-        pip install -r ImageToSTL/requirements.txt
+        python3 -m pip install -r ImageToSTL/requirements.txt
 
 ## Usage
 To run from GUI:

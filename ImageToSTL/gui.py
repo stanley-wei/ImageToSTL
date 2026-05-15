@@ -60,6 +60,7 @@ def process_gui_values(window, values):
 
 	keep_zeroes = not values['ignore_zeroes']
 	keep_transparent = not values['ignore_transparent']
+	invert = values['invert']
 
 	output_filename = values['output_filename']
 	if not output_filename:
@@ -69,7 +70,7 @@ def process_gui_values(window, values):
 	display_status_message(window,
 		f"Generating mesh...", color='white')
 
-	meshed = image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_transparent)
+	meshed = image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_transparent, invert)
 	meshed.save(output_filename)
 
 	display_status_message(window, 
@@ -77,21 +78,21 @@ def process_gui_values(window, values):
 
 
 def main():
-	section1 = [[sg.Text("Output to:"), 
-					sg.InputText('output.stl', key='output_filename', size=(40,1)),
-					sg.FileSaveAs(initial_folder='./')],
-				[sg.Text("Base height:"), sg.Input(0.0, key='base_height', size=(10,1))],
+	section1 = [[sg.Text("Base height:"), sg.Input(0.0, key='base_height', size=(10,1))],
 				[sg.Text("X scale:"), sg.Input(1.0, key='scale_x', size=(10,1))],
 				[sg.Text("Y scale:"), sg.Input(1.0, key='scale_y', size=(10,1))],
 				[sg.Text("Z scale:"), sg.Input(1.0, key='scale_z', size=(10,1))],
 				[sg.Checkbox('Ignore zero-valued pixels', default=True, key='ignore_zeroes')],
-				[sg.Checkbox('Ignore partially transparent pixels', default=True, key='ignore_transparent')]]
-
+				[sg.Checkbox('Ignore partially transparent pixels', default=True, key='ignore_transparent')],
+				[sg.Checkbox('Invert pixels', default=False, key='invert')]]
 
 	# All the stuff inside your window.
 	layout = [  [sg.Text('ImageToSTL', size=(10, 1), font=('Arial Bold', 14))],
 				[sg.Text('Image file:', font=('Arial', 11), pad=(20,0)), 
 					sg.Input(key="input_filename"), sg.FileBrowse(initial_folder='./')],
+				[sg.Text("Output to:", font=('Arial', 11), pad=(21,0)),
+					sg.InputText('output.stl', key='output_filename', size=(40,1)),
+					sg.FileSaveAs(initial_folder='./')],
 				[sg.T(SYMBOL_DOWN, enable_events=True, k='-OPEN SEC1-', pad=(20,0)), 
 					sg.T('Options', enable_events=True, k='-OPEN SEC1-TEXT', font=('Arial', 11))],
 				[collapse(section1, '-SEC1-', pad=(35,0), starts_visible=False)],

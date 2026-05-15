@@ -2,6 +2,7 @@ import argparse
 import cv2
 import math
 import numpy as np
+from scipy import ndimage
 from stl import mesh
 import sys
 
@@ -11,7 +12,7 @@ import sys
         - Switch from numpy_stl to pyvista
         - Reduce triangulation of flat surfaces
 '''
-def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_transparent):
+def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_transparent, invert):
     image = cv2.imread(file_name, -1)
 
     base_height = base
@@ -32,6 +33,13 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
         base_height -= 1
     contours = list(cv2.findContours(contours_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)[0])
 
+    image = np.asarray(image, dtype=float)
+    if invert:
+        image = 255 - image
+
+    internal_mask = ndimage.binary_fill_holes(contours_mask)
+    image[np.where(internal_mask == 0)] += base_height
+
     # Top & Bottom
     top_bottom_faces = 4 * image.shape[0] * image.shape[1]  # Number of top/bottom faces
     if not keep_zeroes:
@@ -39,7 +47,7 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
     meshed = mesh.Mesh(np.zeros(top_bottom_faces, dtype=mesh.Mesh.dtype))
 
     index = 0
-    has_holes = True if (contours_mask == 0).any() else False
+    has_holes = True if (internal_mask == 0).any() else False
     if not has_holes:
         for i in range(image.shape[0] - 1):
             for j in range(image.shape[1] - 1):
@@ -55,14 +63,14 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
                     [i+1, j, image[i+1, j]]
                 ])
                 meshed.vectors[index+2] = np.array([
-                    [i, j+1, -base_height],
-                    [i, j, -base_height],
-                    [i+1, j, -base_height]
+                    [i, j+1, 0],
+                    [i, j, 0],
+                    [i+1, j, 0]
                 ])
                 meshed.vectors[index+3] = np.array([
-                    [i+1, j+1, -base_height],
-                    [i, j+1, -base_height],
-                    [i+1, j, -base_height]
+                    [i+1, j+1, 0],
+                    [i, j+1, 0],
+                    [i+1, j, 0]
                 ])
                 index += 4
     else:
@@ -70,10 +78,10 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
             for j in range(image.shape[1] - 1):
                 # Only generate triangles with non-ignored corners
                 corners = [
-                    contours_mask[i, j],
-                    contours_mask[i+1, j],
-                    contours_mask[i, j+1],
-                    contours_mask[i+1, j+1]
+                    internal_mask[i, j],
+                    internal_mask[i+1, j],
+                    internal_mask[i, j+1],
+                    internal_mask[i+1, j+1]
                 ]
                 if corners.count(0) > 1:
                     continue
@@ -85,9 +93,9 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
                             [i+1, j, image[i+1, j]]
                         ])
                         meshed.vectors[index+1] = np.array([
-                            [i+1, j+1, -base_height],
-                            [i, j+1, -base_height],
-                            [i+1, j, -base_height]
+                            [i+1, j+1, 0],
+                            [i, j+1, 0],
+                            [i+1, j, 0]
                         ])
                     elif corners[1] == 0:
                         meshed.vectors[index] = np.array([
@@ -96,9 +104,9 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
                             [i, j, image[i, j]]
                         ])
                         meshed.vectors[index+1] = np.array([
-                            [i+1, j+1, -base_height],
-                            [i, j+1, -base_height],
-                            [i, j, -base_height]
+                            [i+1, j+1, 0],
+                            [i, j+1, 0],
+                            [i, j, 0]
                         ])
                     elif corners[2] == 0:
                         meshed.vectors[index] = np.array([
@@ -107,9 +115,9 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
                             [i, j, image[i, j]]
                         ])
                         meshed.vectors[index+1] = np.array([
-                            [i+1, j, -base_height],
-                            [i+1, j+1, -base_height],
-                            [i, j, -base_height]
+                            [i+1, j, 0],
+                            [i+1, j+1, 0],
+                            [i, j, 0]
                         ])
                     else:
                         meshed.vectors[index] = np.array([
@@ -118,9 +126,9 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
                             [i+1, j, image[i+1, j]]
                         ])
                         meshed.vectors[index+1] = np.array([
-                            [i, j+1, -base_height],
-                            [i, j, -base_height],
-                            [i+1, j, -base_height]
+                            [i, j+1, 0],
+                            [i, j, 0],
+                            [i+1, j, 0]
                         ])
                     index += 2
                 else:
@@ -135,14 +143,14 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
                         [i+1, j, image[i+1, j]]
                     ])
                     meshed.vectors[index+2] = np.array([
-                        [i, j+1, -base_height],
-                        [i, j, -base_height],
-                        [i+1, j, -base_height]
+                        [i, j+1, 0],
+                        [i, j, 0],
+                        [i+1, j, 0]
                     ])
                     meshed.vectors[index+3] = np.array([
-                        [i+1, j+1, -base_height],
-                        [i, j+1, -base_height],
-                        [i+1, j, -base_height]
+                        [i+1, j+1, 0],
+                        [i, j+1, 0],
+                        [i+1, j, 0]
                     ])
                     index += 4
     meshed.data = meshed.data[0:index]
@@ -159,13 +167,13 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
         # Create two triangles for every pair of adjacent points in a contour
         for i in range(len(contour)-1):
             sides.vectors[index] = np.array([
-                [contour[i][1], contour[i][0], -base_height],
-                [contour[i+1][1], contour[i+1][0], -base_height],
+                [contour[i][1], contour[i][0], 0],
+                [contour[i+1][1], contour[i+1][0], 0],
                 [contour[i][1], contour[i][0], image[contour[i][1], contour[i][0]]]
             ])
             sides.vectors[index+1] = np.array([
                 [contour[i][1], contour[i][0], image[contour[i][1], contour[i][0]]],
-                [contour[i+1][1], contour[i+1][0], -base_height],
+                [contour[i+1][1], contour[i+1][0], 0],
                 [contour[i+1][1], contour[i+1][0], image[contour[i+1][1], contour[i+1][0]]]
             ])
             index += 2
@@ -174,7 +182,7 @@ def image_to_stl(file_name, base, x_scale, y_scale, z_scale, keep_zeroes, keep_t
     meshed.data = np.concatenate((meshed.data, sides.data))
     meshed.vectors[:, :, 0] *= x_scale
     meshed.vectors[:, :, 1] *= y_scale
-    meshed.vectors[:, :, 2] *= z_scale
+    meshed.vectors[:, :, 2] = (meshed.vectors[:, :, 2] - base_height) * z_scale + base_height
 
     return meshed
 
@@ -199,9 +207,11 @@ if __name__ == "__main__":
                         help='Retain zero-valued pixels within the generated mesh')
     parser.add_argument('--keep-transparent', dest='keep_transparent', action='store_true',
                         help='Retain partially transparent pixels within the generated mesh')
+    parser.add_argument('--invert', dest='invert', action='store_true',
+                        help='Invert image')
     
     args = parser.parse_args();
     meshed = image_to_stl(args.image, args.base, args.x_scale, args.y_scale, args.z_scale, 
-        args.keep_zeroes, args.keep_transparent)
+        args.keep_zeroes, args.keep_transparent, args.invert)
 
     meshed.save(args.output)
